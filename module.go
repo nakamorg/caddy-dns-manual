@@ -3,6 +3,7 @@ package template
 import (
 	"fmt"
 	"time"
+	"context"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -12,7 +13,7 @@ import (
 
 // Provider lets Caddy read and manipulate DNS records hosted by this DNS provider.
 type Provider struct {
-	WaitInMins string
+	WaitInMins string `json:"wait_in_mins,omitempty"`
 }
 
 func init() {
@@ -23,27 +24,26 @@ func init() {
 func (Provider) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
 		ID:  "dns.providers.manual_dns",
-		New: func() caddy.Module { return &Provider{new(Provider)} },
+		New: func() caddy.Module { return new(Provider) },
 	}
 }
 
 // Provision sets up the module. Implements caddy.Provisioner.
 func (p *Provider) Provision(ctx caddy.Context) error {
-	p.Provider.WaitInMins = caddy.NewReplacer().ReplaceAll(p.Provider.WaitInMins, "1")
+	p.WaitInMins = caddy.NewReplacer().ReplaceAll(p.WaitInMins, "1")
 	return nil
 }
 
-
 // AppendRecords doesn't do anything and simply returns the records that were asked to be added.
 func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	caddy.Log().Named("manual-dns").Info("appending dns records", zap.Info(records))
+	caddy.Log().Named("manual-dns").Info("appending dns records", zap.Reflect("records", records))
 	p.wait()
 	return records, nil
 }
 
 // DeleteRecords doesn't do anything and simply returns the records that were asked to be deleted.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	caddy.Log().Named("manual-dns").Info("deleting dns records", zap.Info(records))
+	caddy.Log().Named("manual-dns").Info("deleting dns records", zap.Reflect("records", records))
 	p.wait()
 	return records, nil
 }
@@ -54,21 +54,20 @@ func (p *Provider) wait() error {
 		caddy.Log().Named("manual-dns").Error("waiting for records", zap.Error(err))
 		return err
 	}
-	caddy.Log().Named("manual-dns").Info("waiting for records", zap.Info(minutesToWait))
+	caddy.Log().Named("manual-dns").Info("waiting for records", zap.Duration("time", minutesToWait))
 	time.Sleep(minutesToWait)
 	return nil
 }
 
 // UnmarshalCaddyfile sets up the DNS provider from Caddyfile tokens. Syntax:
 //
-// providername [<wait_in_mins>] {
-//     wait_in_mins <wait_in_mins>
-// }
+//	providername [<wait_in_mins>] {
+//	    wait_in_mins <wait_in_mins>
+//	}
 func (p *Provider) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
-	waitInMins 
 	for d.Next() {
 		if d.NextArg() {
-			p.Provider.WaitInMins = d.Val()
+			p.WaitInMins = d.Val()
 		}
 		if d.NextArg() {
 			return d.ArgErr()
@@ -77,7 +76,7 @@ func (p *Provider) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 			switch d.Val() {
 			case "wait_in_mins":
 				if d.NextArg() {
-					p.Provider.WaitInMins = d.Val()
+					p.WaitInMins = d.Val()
 				}
 				if d.NextArg() {
 					return d.ArgErr()
@@ -87,8 +86,8 @@ func (p *Provider) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 			}
 		}
 	}
-	if p.Provider.WaitInMins == "" {
-		p.Provider.WaitInMins = "1"
+	if p.WaitInMins == "" {
+		p.WaitInMins = "1"
 	}
 	return nil
 }
