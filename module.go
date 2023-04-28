@@ -36,14 +36,14 @@ func (p *Provider) Provision(ctx caddy.Context) error {
 
 // AppendRecords doesn't do anything and simply returns the records that were asked to be added.
 func (p *Provider) AppendRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	caddy.Log().Named("manual-dns").Info("appending dns records", zap.Reflect("records", records))
+	caddy.Log().Named("manual-dns").Info("please append following dns records manually", zap.Reflect("records", records))
 	p.wait()
 	return records, nil
 }
 
 // DeleteRecords doesn't do anything and simply returns the records that were asked to be deleted.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
-	caddy.Log().Named("manual-dns").Info("deleting dns records", zap.Reflect("records", records))
+	caddy.Log().Named("manual-dns").Info("please delete following dns records manually", zap.Reflect("records", records))
 	p.wait()
 	return records, nil
 }
@@ -56,6 +56,7 @@ func (p *Provider) wait() error {
 	}
 	caddy.Log().Named("manual-dns").Info("waiting for records", zap.Duration("time", minutesToWait))
 	time.Sleep(minutesToWait)
+	caddy.Log().Named("manual-dns").Info("wait finished")
 	return nil
 }
 
