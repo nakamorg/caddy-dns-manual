@@ -1,9 +1,9 @@
 package template
 
 import (
+	"context"
 	"fmt"
 	"time"
-	"context"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
